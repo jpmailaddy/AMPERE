@@ -1,0 +1,47 @@
+import sys
+import os
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.ticker as tck
+import netCDF4
+import glob
+
+np.set_printoptions(threshold=sys.maxsize)
+ifiles = glob.glob(os.path.expanduser("~/Documents/POES_Data/*.nc"))
+
+for itime in range(0, 4):
+
+    file2read = netCDF4.Dataset(ifiles[itime],'r')
+
+    var = file2read.variables['MLT']
+    MLT = np.array(var)
+    var = file2read.variables['lValue']
+    lshell = np.array(var)
+    var = file2read.variables['EOcounts_corrected']
+    EOcounts_corrected = np.array(var)
+    var = file2read.variables['Eerror']
+    Eerror = np.array(var)
+
+    
+    
+    lshell_index = np.where(lshell>5)
+    lshell_index = np.array(lshell_index)
+    new_EOcounts_array = EOcounts_corrected[lshell_index,:]
+
+
+plt.scatter(lshell_index,new_EOcounts_array[0,:,0],s=2,label = "E1 - $90°$")
+plt.scatter(lshell_index,new_EOcounts_array[0,:,1],s=2,label = "E2 - $90°$")
+plt.scatter(lshell_index,new_EOcounts_array[0,:,2],s=2,label = "E3 - $90°$")
+plt.scatter(lshell_index,new_EOcounts_array[0,:,3],s=2,label = "E4 - $90°$")
+
+plt.title('EOcounts vs Lshell (Corrected) ')
+plt.minorticks_on()
+tck.AutoMinorLocator()
+plt.grid(which='major',linestyle='-',alpha=0.8)   # add a grid to the major ticks
+plt.grid(which='minor',linestyle='--',alpha=0.5)
+plt.xlabel('LShell')
+plt.ylabel('EOCounts')
+plt.legend()
+plt.show()
+
+
