@@ -1,0 +1,76 @@
+import numpy as np
+import netCDF4 
+import glob
+import os
+
+path = os.path.expanduser("~/Desktop/MEPED POES NOAA15")
+
+ifiles_00 = sorted(glob.glob(os.path.join(path, "POES_combinedSpectrum_n15_00_*.nc")))
+ifiles_90 = sorted(glob.glob(os.path.join(path, "POES_combinedSpectrum_n15_90_*.nc")))
+
+if not ifiles_00 or not ifiles_90:
+    print(f"Error: No NetCDF files found. Check path and patterns.")
+    print(f"Path searched: {path}")
+    exit()
+
+if len(ifiles_00) != len(ifiles_90):
+    print(f"Warning: Mismatch in file counts: {len(ifiles_00)} (00deg) vs {len(ifiles_90)} (90deg).")
+    print("Processing pairs based on sorted order. Ensure files correspond correctly.")
+
+for i, (file_00_path, file_90_path) in enumerate(zip(ifiles_00, ifiles_90), start=1):
+    print(f"Processing File Pair {i}:")
+    print(f"  00-degree file: {os.path.basename(file_00_path)}")
+    print(f"  90-degree file: {os.path.basename(file_90_path)}")
+
+    try:
+        with netCDF4.Dataset(file_00_path) as d0, netCDF4.Dataset(file_90_path) as d9:
+            l_values = d0.variables['lValue'][:]
+            relative_times_all = d0.variables['rtime'][:]
+            counts_00_all = d0.variables['EOcounts_corrected'][:]
+            counts_90_all = d9.variables['EOcounts_corrected'][:]
+
+            counts_00 = counts_00_all[:, 0] if counts_00_all.ndim > 1 else counts_00_all
+            counts_90 = counts_90_all[:, 0] if counts_90_all.ndim > 1 else counts_90_all
+
+    except FileNotFoundError:
+        print(f"  Error: One or both files in pair {i} not found. Skipping.")
+        print("-" * 40)
+        continue
+    except KeyError as e:
+        print(f"  Error: Variable {e} not found in one of the files. Skipping pair {i}.")
+        print("-" * 40)
+        continue
+    except Exception as e:
+        print(f"  An unexpected error occurred while reading files: {e}. Skipping pair {i}.")
+        print("-" * 40)
+        continue
+
+    l_gt_5_mask = l_values > 5
+
+    if not np.any(l_gt_5_mask):
+        print(f"  File Pair {i}: No data points found with L > 5.")
+        print("-" * 40)
+        continue
+
+    counts_00_filtered = counts_00[l_gt_5_mask]
+    counts_90_filtered = counts_90[l_gt_5_mask]
+    relative_times_filtered = relative_times_all[l_gt_5_mask]
+
+    if relative_times_filtered.size == 0:
+        print(f"  File Pair {i}: No data points remain after L > 5 filtering for time alignment. Skipping.")
+        print("-" * 40)
+        continue
+
+    event_flags = (counts_00_filtered > counts_90_filtered).astype(int)
+
+    flag_and_time_array = np.column_stack((event_flags, relative_times_filtered))
+
+    print(f"  Flag and Time array (Flag=1 if 00deg_counts > 90deg_counts, for L > 5):")
+    print(flag_and_time_array)
+
+    num_condition_met = np.sum(event_flags)
+    print(f"  Number of instances where 00deg_counts > 90deg_counts (L > 5): {num_condition_met}")
+    print(f"  Total data points after L > 5 filtering: {len(event_flags)}")
+    print("-" * 40)
+
+print("Processing complete.")
