@@ -4,6 +4,7 @@ import numpy as np
 import netCDF4
 import glob
 import os
+import re
 
 path = os.path.expanduser("~/Desktop/MEPED POES NOAA15")
 
@@ -26,6 +27,19 @@ for i, (file_00_path, file_90_path) in enumerate(zip(ifiles_00, ifiles_90), star
     print(f"Processing File Pair {i}:")
     print(f"  00-degree file: {os.path.basename(file_00_path)}")
     print(f"  90-degree file: {os.path.basename(file_90_path)}")
+
+    # Searches file path for the date and saves it to a string array for the output filename
+
+    filepath = file_00_path
+    pattern = r"\d{8}"  # match phone number format
+    
+    result = re.search(pattern, filepath)  # search pattern
+    
+    if result:
+        Filename_start_index = result.start()  # match start index
+        filename_for_output = file_00_path[Filename_start_index:Filename_start_index+8]
+    else:
+        print("Filename Issue")
 
     try:
         with netCDF4.Dataset(file_00_path) as d0, netCDF4.Dataset(file_90_path) as d9:
@@ -105,6 +119,10 @@ for i, (file_00_path, file_90_path) in enumerate(zip(ifiles_00, ifiles_90), star
         num_condition_met = np.sum(event_flags)
         print(f"    Number of instances for Channel {channel_idx} where 00deg_counts / 90deg_counts > 2 (L > 5): {num_condition_met}")
         print(f"    Total data points for Channel {channel_idx} after L > 5 filtering: {len(event_flags)}")
+
+        from netcdf_writer import netcdf_writer
+        netcdf_writer(relative_times_filtered, flag_and_time_array, ratio_00_over_90, counts_00_filtered, counts_90_filtered, filename_for_output)
+        
         
     print("-" * 40)
 
