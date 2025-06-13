@@ -5,12 +5,13 @@ import os
 import re
 
 sat = 'n15'
-input_dir = ''
+input_dir = 'C:/Users/username/Desktop/POES_Files/'
+detector = '00'
 
 path = os.path.expanduser(input_dir)
-ifiles_00 = sorted(glob.glob(os.path.join(path, "POES_combinedSpectrum_"+sat+"_00_*.nc")))
+ifiles_00 = sorted(glob.glob(os.path.join(path, "POES_combinedSpectrum_"+sat+detector+".nc")))
 
-for in range(0, len(ifiles_00)):
+for iday in range(0, len(ifiles_00)):
 
     # Searches file path for the date and saves it to a string array for the output filename
 
@@ -25,29 +26,43 @@ for in range(0, len(ifiles_00)):
         print("Filename Issue")
 
 
-    read code for each netcdf file
+  #  read code for each netcdf file
 
     sub sampling logic 
 
-    useful_time = rtime*60.  # 60 minutes in an hour ( 0 - 1440)
+    useful_time = rtime*60.  # 60 minutes in an hour (0 - 1440)  rtime (0-24)
 
-    ii = 0 
-    kk = 1
+    ii = 0   # first minute
+    kk = 1   # second minute
 
-    for in range (0, 1440):
-      if useful_time[itime] ge ii and lt kk:
+    eocounts_corrected[4, 5400]    # 5400 --> rtime  useful_time array [5400] --> 0 -1440
 
-         temp_array = eocounts_corrected[]
+    for itime in range (0, len(rtime)):
+        sub_sample_index = where(useful_time ge ii and useful_time lt kk)
+
+        temp_array = eocounts_corrected[:, sub_sample_index]  # -> [4, 3] 
 
         if np.size(temp_array) lt 1 
-            median = -99 #flag value
-            mean = -99 #flag value
+            median = -999 #flag value
+            mean = -999 #flag value
+        else:
+            for k in range(0, 4)
+                median_counts = np.median(temp_array[k, :]
+                mean_counts = np.mean(temp_array[k, :]
 
-        median = count rates over each minutes
-        mean = count rates each minutes
+      # Concantenate mean_couunts, median_counts into a total array
 
-      ii = ii + 1
-      kk = kk + 1
+        if itime eq 0:
+            median_counts_total = median_counts
+            mean_counts_total = mean_counts
+        if itime ne 0:
+            median_counts_total = [[median_counts_total], [median_counts]]  
+            mean_counts_total = [[mean_counts_total], [mean_counts]]  
+            
+        ii = ii + 1 # increase first minute
+        kk = kk + 1 # increase second minute
 
-
+    # Netcdf output code that saves the median_counts_total, mean_counts_total, lshell?, mlt?, geographic?
+    
+        filename_for_output = netcdf_file
     
