@@ -1,0 +1,49 @@
+import numpy as np
+import netCDF4
+import glob
+import os
+
+try:
+    path = os.path.expanduser("~/Desktop/MEPED POES NOAA15")
+    ifiles_00 = sorted(glob.glob(os.path.join(path, "POES_combinedSpectrum_n15_00_*.nc")))
+    ifiles_90 = sorted(glob.glob(os.path.join(path, "POES_combinedSpectrum_n15_90_*.nc")))
+    if not ifiles_00 or not ifiles_90:
+        print("Error: NetCDF files not found. Please check the path.")
+        exit()
+    if len(ifiles_00) != len(ifiles_90):
+        print(f"Warning: Mismatch in file counts: {len(ifiles_00)} (00deg) vs {len(ifiles_90)} (90deg).")
+except Exception as e:
+    print(f"An error occurred during file setup: {e}")
+    exit()
+
+for i, (file_00_path, file_90_path) in enumerate(zip(ifiles_00, ifiles_90), start=1):
+    print("\n" + "="*60)
+    print(f"  00-deg: {os.path.basename(file_00_path)}")
+    print(f"  90-deg: {os.path.basename(file_90_path)}")
+    print("="*60)
+
+    try:
+        with netCDF4.Dataset(file_00_path) as d0:
+            data_to_process = d0.variables['EOcounts_corrected'][:]
+    except (FileNotFoundError, KeyError, Exception) as e:
+        print(f"  ERROR: Could not process file {os.path.basename(file_00_path)}. Reason: {e}. Skipping pair.")
+        continue
+
+    print("\n--- Calculating Average for 00-Degree Data ---")
+    
+    
+    valid_data_count = data_to_process.count()
+
+    if valid_data_count > 0:
+        average_value = data_to_process.mean()
+        total_data_collected = data_to_process.sum()
+        
+        print(f"  Total data collected: {total_data_collected}")
+        print(f"  Number of valid data points: {valid_data_count}")
+        print(f"  Computed Average: {average_value:.2f}")
+    else:
+        print("  No valid data points were found in this file. Cannot compute average.")
+
+print("\n" + "="*60)
+print("All file pairs processed.")
+print("="*60)
